@@ -4,9 +4,9 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const mailer = require('../../modules/mailer')
 const authConfing = require('../../config/auth.json')
+const authMiddleware = require('../middlewares/auth');
 
 const User = require('../models/user');
-const { send } = require('process');
 
 const router = express.Router();
 
@@ -61,7 +61,7 @@ router.post('/authenticate', async (req, res) => {
     );
 
     user.password = undefined;
-    res.send({ user, token });
+    return res.send({ user, token });
 });
 
 router.post('/forgot_password', async (req, res) => {
@@ -131,5 +131,17 @@ router.post('/reset_password', async (req, res) => {
         });
     }
 });
+
+router.use(authMiddleware).get('/', async (req, res) => {
+    try {
+        const users = await User.find();
+        res.send(users);
+    } catch (err) {
+        return res.status(400).send({
+            error: 'Error loading users',
+            debug: err
+        });
+    }
+})
 
 module.exports = (app) => app.use('/auth', router);
